@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TaskFlow</title>
+    <meta name="description"
+        content="A modern task management app with daily, weekly, and monthly tasks displayed on a beautiful calendar.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="index.css">
+</head>
+
+<body>
+    <!-- Access Code Modal -->
+    <div id="accessModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span class="modal-logo">✦</span>
+                <h2>Welcome to TaskFlow</h2>
+                <p>Access your tasks from any device</p>
+            </div>
+
+            <!-- Initial Choice -->
+            <div id="accessChoice" class="modal-section">
+                <button class="btn btn-primary btn-large" id="btnNewUser">
+                    <span class="btn-icon-left">✨</span>
+                    Get Started (New User)
+                </button>
+                <div class="divider"><span>or</span></div>
+                <button class="btn btn-secondary btn-large" id="btnReturning">
+                    <span class="btn-icon-left">🔑</span>
+                    I Have an Access Code
+                </button>
+            </div>
+
+            <!-- Enter Code Form -->
+            <div id="accessEnterCode" class="modal-section" style="display: none;">
+                <h3>Enter Your Access Code</h3>
+                <div class="code-input-group">
+                    <input type="text" id="codeInput1" class="code-input" maxlength="4" placeholder="XXXX">
+                    <span class="code-separator">-</span>
+                    <input type="text" id="codeInput2" class="code-input" maxlength="4" placeholder="XXXX">
+                    <span class="code-separator">-</span>
+                    <input type="text" id="codeInput3" class="code-input" maxlength="4" placeholder="XXXX">
+                </div>
+                <div id="pinInputGroup" class="pin-input-group" style="display: none;">
+                    <label>Enter your 4-digit PIN</label>
+                    <input type="password" id="pinInput" class="pin-input" maxlength="4" placeholder="••••">
+                </div>
+                <p id="accessError" class="error-message" style="display: none;"></p>
+                <div class="modal-actions">
+                    <button class="btn btn-secondary" id="btnBackToChoice">Back</button>
+                    <button class="btn btn-primary" id="btnValidateCode">Access My Tasks</button>
+                </div>
+            </div>
+
+            <!-- Show New Code -->
+            <div id="accessNewCode" class="modal-section" style="display: none;">
+                <h3>Your Access Code</h3>
+                <p class="code-instruction">Save this code! You'll need it to access your tasks from other devices.</p>
+                <div class="code-display">
+                    <span id="newCodeDisplay">XXXX-XXXX-XXXX</span>
+                    <button class="btn-copy" id="btnCopyCode" title="Copy code">📋</button>
+                </div>
+                <p id="codeCopied" class="success-message" style="display: none;">Copied to clipboard!</p>
+                <div class="modal-actions">
+                    <button class="btn btn-primary btn-large" id="btnStartUsing">I've Saved My Code - Start Using
+                        TaskFlow</button>
+                </div>
+            </div>
+
+            <!-- Loading -->
+            <div id="accessLoading" class="modal-section" style="display: none;">
+                <div class="loading-spinner"></div>
+                <p>Connecting to cloud...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="modal" style="display: none;">
+        <div class="modal-content modal-small">
+            <div class="modal-header-simple">
+                <h2>Settings</h2>
+                <button class="btn-close" id="btnCloseSettings">✕</button>
+            </div>
+
+            <!-- Your Code -->
+            <div class="settings-section">
+                <h4>Your Access Code</h4>
+                <div class="code-display code-display-small">
+                    <span id="settingsCodeDisplay">XXXX-XXXX-XXXX</span>
+                    <button class="btn-copy" id="btnCopyCodeSettings" title="Copy code">📋</button>
+                </div>
+            </div>
+
+            <!-- PIN Section -->
+            <div class="settings-section">
+                <h4>Security PIN (Optional)</h4>
+                <p class="settings-desc">Add a 4-digit PIN for extra security</p>
+                <div id="pinNotSet" class="pin-setting">
+                    <input type="password" id="newPinInput" class="pin-input" maxlength="4"
+                        placeholder="Enter 4 digits">
+                    <button class="btn btn-secondary btn-small" id="btnSetPin">Set PIN</button>
+                </div>
+                <div id="pinIsSet" class="pin-setting" style="display: none;">
+                    <span class="pin-status">✓ PIN is set</span>
+                    <button class="btn btn-secondary btn-small" id="btnRemovePin">Remove PIN</button>
+                </div>
+            </div>
+
+            <!-- Email Section -->
+            <div class="settings-section">
+                <h4>Recovery Email (Optional)</h4>
+                <p class="settings-desc">Get notified if your code changes</p>
+                <div class="email-setting">
+                    <input type="email" id="emailInput" class="email-input" placeholder="your@email.com">
+                    <button class="btn btn-secondary btn-small" id="btnSetEmail">Save</button>
+                </div>
+            </div>
+
+            <!-- Logout -->
+            <div class="settings-section">
+                <button class="btn btn-danger" id="btnLogout">Logout from this device</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="app-container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-top">
+                <div class="logo">
+                    <span class="logo-icon">✦</span>
+                    <h1>TaskFlow</h1>
+                </div>
+                <div class="header-actions">
+                    <div id="syncStatus" class="sync-status" style="display: none;">
+                        <span class="sync-dot"></span>
+                        <span class="sync-text">Synced</span>
+                    </div>
+                    <button class="btn btn-icon-only" id="btnSettings" title="Settings"
+                        style="display: none;">⚙️</button>
+                </div>
+            </div>
+            <p class="tagline">Organize your days, weeks & months</p>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Sidebar - Task Form & List -->
+            <aside class="sidebar">
+                <!-- Add Task Card -->
+                <div class="card task-form-card">
+                    <h2 class="card-title">
+                        <span class="icon">+</span>
+                        <span id="formTitle">New Task</span>
+                    </h2>
+                    <form id="taskForm" class="task-form">
+                        <input type="hidden" id="taskId" value="">
+
+                        <div class="form-group">
+                            <label for="taskTitle">Task Title</label>
+                            <input type="text" id="taskTitle" placeholder="What needs to be done?" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="taskDescription">Description (optional)</label>
+                            <textarea id="taskDescription" placeholder="Add details..." rows="2"></textarea>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="taskDate">Start Date</label>
+                                <input type="date" id="taskDate" required>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="taskRecurrence">Recurrence</label>
+                                <select id="taskRecurrence">
+                                    <option value="none">One-time</option>
+                                    <option value="daily">Daily</option>
+                                    <option value="weekly">Weekly</option>
+                                    <option value="monthly">Monthly</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary" id="submitBtn">Add Task</button>
+                            <button type="button" class="btn btn-secondary" id="cancelBtn"
+                                style="display: none;">Cancel</button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Task List Card -->
+                <div class="card task-list-card">
+                    <div class="card-header">
+                        <h2 class="card-title">
+                            <span class="icon">☰</span>
+                            All Tasks
+                        </h2>
+                        <div class="filter-tabs">
+                            <button class="filter-btn active" data-filter="all">All</button>
+                            <button class="filter-btn" data-filter="daily">Daily</button>
+                            <button class="filter-btn" data-filter="weekly">Weekly</button>
+                            <button class="filter-btn" data-filter="monthly">Monthly</button>
+                        </div>
+                    </div>
+                    <div id="taskList" class="task-list">
+                        <p class="empty-state">No tasks yet. Add your first task above!</p>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Calendar Section -->
+            <section class="calendar-section">
+                <div class="card calendar-card">
+                    <div class="calendar-header">
+                        <button class="nav-btn" id="prevMonth">
+                            <span>‹</span>
+                        </button>
+                        <h2 id="currentMonth">January 2026</h2>
+                        <button class="nav-btn" id="nextMonth">
+                            <span>›</span>
+                        </button>
+                        <button class="btn btn-secondary today-btn" id="todayBtn">Today</button>
+                    </div>
+
+                    <div class="calendar-grid">
+                        <div class="calendar-weekdays">
+                            <span>Sun</span>
+                            <span>Mon</span>
+                            <span>Tue</span>
+                            <span>Wed</span>
+                            <span>Thu</span>
+                            <span>Fri</span>
+                            <span>Sat</span>
+                        </div>
+                        <div id="calendarDays" class="calendar-days">
+                            <!-- Days will be generated by JavaScript -->
+                        </div>
+                    </div>
+
+                    <div class="legend">
+                        <div class="legend-item">
+                            <span class="legend-dot daily"></span>
+                            <span>Daily</span>
+                        </div>
+                        <div class="legend-item">
+                            <span class="legend-dot weekly"></span>
+                            <span>Weekly</span>
+                        </div>
+                        <div class="legend-item">
+                            <span class="legend-dot monthly"></span>
+                            <span>Monthly</span>
+                        </div>
+                        <div class="legend-item">
+                            <span class="legend-dot one-time"></span>
+                            <span>One-time</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Selected Day Tasks -->
+                <div class="card day-tasks-card" id="dayTasksCard" style="display: none;">
+                    <h3 id="selectedDayTitle">Tasks for January 19, 2026</h3>
+                    <div id="dayTasksList" class="day-tasks-list">
+                        <!-- Tasks for selected day -->
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="config.js"></script>
+    <script src="cloud-sync.js"></script>
+    <script src="app.js?v=4"></script>
+</body>
+
+</html>
