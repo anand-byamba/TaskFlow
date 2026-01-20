@@ -102,6 +102,21 @@ body::before {
     margin: 0 auto;
     padding: var(--spacing-lg);
     min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.main-content {
+    flex: 1;
+}
+
+.footer {
+    text-align: center;
+    padding: var(--spacing-xl) 0;
+    margin-top: var(--spacing-2xl);
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    letter-spacing: 0.5px;
 }
 
 .header {
@@ -998,22 +1013,22 @@ body::before {
     background: var(--border-color);
 }
 
-/* Code Input */
+/* Code Input - Single Field */
 .code-input-group {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: var(--spacing-sm);
 }
 
-.code-input {
-    width: 80px;
+.code-input-single {
+    width: 100%;
+    max-width: 280px;
     padding: var(--spacing-md);
     text-align: center;
-    font-size: 1.2rem;
+    font-size: 1.3rem;
     font-weight: 600;
     font-family: 'Courier New', monospace;
-    letter-spacing: 2px;
+    letter-spacing: 3px;
     text-transform: uppercase;
     background: rgba(255, 255, 255, 0.05);
     border: 1px solid var(--border-color);
@@ -1022,15 +1037,15 @@ body::before {
     transition: all var(--transition-fast);
 }
 
-.code-input:focus {
+.code-input-single::placeholder {
+    letter-spacing: 1px;
+    color: var(--text-muted);
+}
+
+.code-input-single:focus {
     outline: none;
     border-color: var(--accent-primary);
     box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.2);
-}
-
-.code-separator {
-    font-size: 1.5rem;
-    color: var(--text-muted);
 }
 
 /* PIN Input */
@@ -1047,11 +1062,11 @@ body::before {
 }
 
 .pin-input {
-    width: 120px;
+    width: 100px;
     padding: var(--spacing-sm) var(--spacing-md);
     text-align: center;
-    font-size: 1.5rem;
-    letter-spacing: 8px;
+    font-size: 1.2rem;
+    letter-spacing: 4px;
     background: rgba(255, 255, 255, 0.05);
     border: 1px solid var(--border-color);
     border-radius: var(--radius-sm);
@@ -1137,6 +1152,16 @@ body::before {
     border-radius: 50%;
     margin: 0 auto var(--spacing-md);
     animation: spin 1s linear infinite;
+}
+
+#accessLoading {
+    align-items: center;
+    text-align: center;
+}
+
+#accessLoading p {
+    text-align: center;
+    width: 100%;
 }
 
 @keyframes spin {
@@ -1294,19 +1319,55 @@ body::before {
    RESPONSIVE MODAL
    ============================================ */
 @media (max-width: 640px) {
-    .modal-content {
-        padding: var(--spacing-lg);
+    .modal {
+        padding: var(--spacing-md);
     }
 
-    .code-input {
-        width: 60px;
-        font-size: 1rem;
-        padding: var(--spacing-sm);
+    .modal-content {
+        padding: var(--spacing-lg);
+        margin: 0 auto;
+    }
+
+    .modal-header {
+        margin-bottom: var(--spacing-lg);
+    }
+
+    .modal-logo {
+        font-size: 2.5rem;
+    }
+
+    .modal-header h2 {
+        font-size: 1.25rem;
+    }
+
+    .code-input-single {
+        max-width: 100%;
+        font-size: 1.1rem;
+        letter-spacing: 2px;
+    }
+
+    .code-display {
+        padding: var(--spacing-md);
+        flex-direction: column;
+        gap: var(--spacing-sm);
     }
 
     .code-display span {
-        font-size: 1.1rem;
+        font-size: 1rem;
         letter-spacing: 1px;
+    }
+
+    .btn-large {
+        padding: var(--spacing-sm) var(--spacing-md);
+        font-size: 0.9rem;
+    }
+
+    .modal-actions {
+        flex-direction: column;
+    }
+
+    .modal-actions .btn {
+        width: 100%;
     }
 
     .header-actions {
@@ -1316,5 +1377,20 @@ body::before {
 
     .header-top {
         flex-direction: column;
+    }
+
+    .settings-section h4 {
+        font-size: 0.9rem;
+    }
+
+    .pin-setting,
+    .email-setting {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .pin-input,
+    .email-input {
+        width: 100%;
     }
 }

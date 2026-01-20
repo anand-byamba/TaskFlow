@@ -6,7 +6,7 @@ class TaskManager {
     constructor(cloudSync = null) {
         this.cloudSync = cloudSync;
         this.tasks = this.loadTasks();
-        this.currentFilter = 'all';
+        this.currentFilter = 'daily';
         this.currentMonth = new Date();
         this.selectedDate = null;
         this.editingTaskId = null;
@@ -92,6 +92,17 @@ class TaskManager {
                 this.setFilter(e.target.dataset.filter);
             });
         });
+
+        // Show/hide end date based on recurrence
+        document.getElementById('taskRecurrence').addEventListener('change', (e) => {
+            const endDateGroup = document.getElementById('endDateGroup');
+            if (e.target.value !== 'none') {
+                endDateGroup.style.display = 'block';
+            } else {
+                endDateGroup.style.display = 'none';
+                document.getElementById('taskEndDate').value = '';
+            }
+        });
     }
 
     // ============================================
@@ -102,15 +113,16 @@ class TaskManager {
         const description = document.getElementById('taskDescription').value.trim();
         const date = document.getElementById('taskDate').value;
         const recurrence = document.getElementById('taskRecurrence').value;
+        const endDate = document.getElementById('taskEndDate').value || null;
 
         if (!title || !date) return;
 
         if (this.editingTaskId) {
             // Update existing task
-            this.updateTask(this.editingTaskId, { title, description, date, recurrence });
+            this.updateTask(this.editingTaskId, { title, description, date, recurrence, endDate });
         } else {
             // Create new task
-            this.addTask({ title, description, date, recurrence });
+            this.addTask({ title, description, date, recurrence, endDate });
         }
 
         this.resetForm();
@@ -126,7 +138,8 @@ class TaskManager {
             description: taskData.description,
             date: taskData.date,
             recurrence: taskData.recurrence,
-            completed: false,
+            endDate: taskData.endDate || null, // Optional end date for recurring tasks
+            completedDates: [], // Array of dates when task was completed
             createdAt: new Date().toISOString()
         };
 
@@ -150,14 +163,40 @@ class TaskManager {
         this.renderDayTasks();
     }
 
-    toggleComplete(id) {
+    toggleComplete(id, dateStr = null) {
         const task = this.tasks.find(t => t.id === id);
         if (task) {
-            task.completed = !task.completed;
+            // Use provided date or today
+            const targetDate = dateStr || this.formatDate(new Date().getFullYear(), new Date().getMonth(), new Date().getDate());
+
+            // Initialize completedDates if it doesn't exist (for backward compatibility)
+            if (!task.completedDates) {
+                task.completedDates = task.completed ? [task.date] : [];
+            }
+
+            // Toggle completion for this specific date
+            const index = task.completedDates.indexOf(targetDate);
+            if (index > -1) {
+                // Already completed - remove it
+                task.completedDates.splice(index, 1);
+            } else {
+                // Not completed - add it
+                task.completedDates.push(targetDate);
+            }
+
             this.saveTasks();
             this.renderTaskList();
             this.renderDayTasks();
+            this.renderCalendar();
         }
+    }
+
+    isCompletedOnDate(task, dateStr) {
+        // Handle backward compatibility
+        if (!task.completedDates) {
+            return task.completed && task.date === dateStr;
+        }
+        return task.completedDates.includes(dateStr);
     }
 
     editTask(id) {
@@ -429,11 +468,12 @@ class TaskManager {
             return;
         }
 
-        list.innerHTML = tasks.map(task => this.createTaskItemHTML(task, true)).join('');
+        // Pass the selected date for completion checking
+        list.innerHTML = tasks.map(task => this.createTaskItemHTML(task, this.selectedDate)).join('');
         this.bindTaskItemEvents();
     }
 
-    createTaskItemHTML(task, showInDayList = false) {
+    createTaskItemHTML(task, forDate = null) {
         const dateObj = new Date(task.date + 'T00:00:00');
         const dateStr = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
         const recurrenceLabel = {
@@ -443,9 +483,13 @@ class TaskManager {
             'monthly': 'Monthly'
         }[task.recurrence] || 'One-time';
 
+        // Use provided date or default to today
+        const checkDate = forDate || this.formatDate(new Date().getFullYear(), new Date().getMonth(), new Date().getDate());
+        const isCompleted = this.isCompletedOnDate(task, checkDate);
+
         return `
-            <div class="task-item ${task.recurrence} ${task.completed ? 'completed' : ''}" data-id="${task.id}">
-                <div class="task-checkbox" data-action="complete" data-id="${task.id}"></div>
+            <div class="task-item ${task.recurrence} ${isCompleted ? 'completed' : ''}" data-id="${task.id}">
+                <div class="task-checkbox" data-action="complete" data-id="${task.id}" data-date="${checkDate}"></div>
                 <div class="task-content">
                     <div class="task-title">${this.escapeHtml(task.title)}</div>
                     <div class="task-meta">
@@ -462,31 +506,36 @@ class TaskManager {
     }
 
     bindTaskItemEvents() {
-        // Complete toggle
-        document.querySelectorAll('[data-action="complete"]').forEach(el => {
-            el.addEventListener('click', (e) => {
-                e.stopPropagation();
-                this.toggleComplete(e.target.dataset.id);
-            });
-        });
+        // Use event delegation on both task containers
+        const taskList = document.getElementById('taskList');
+        const dayTasksList = document.getElementById('dayTasksList');
 
-        // Edit button
-        document.querySelectorAll('[data-action="edit"]').forEach(el => {
-            el.addEventListener('click', (e) => {
-                e.stopPropagation();
-                this.editTask(e.target.dataset.id);
-            });
-        });
+        // Handler function for task actions
+        const handleAction = (e) => {
+            const target = e.target.closest('[data-action]');
+            if (!target) return;
 
-        // Delete button
-        document.querySelectorAll('[data-action="delete"]').forEach(el => {
-            el.addEventListener('click', (e) => {
-                e.stopPropagation();
+            e.stopPropagation();
+            const action = target.dataset.action;
+            const id = target.dataset.id;
+            const date = target.dataset.date;
+
+            if (action === 'complete') {
+                this.toggleComplete(id, date);
+            } else if (action === 'edit') {
+                this.editTask(id);
+            } else if (action === 'delete') {
                 if (confirm('Are you sure you want to delete this task?')) {
-                    this.deleteTask(e.target.dataset.id);
+                    this.deleteTask(id);
                 }
-            });
-        });
+            }
+        };
+
+        // Remove old listeners and add new ones using delegation
+        taskList.onclick = handleAction;
+        if (dayTasksList) {
+            dayTasksList.onclick = handleAction;
+        }
     }
 
     escapeHtml(text) {
@@ -539,22 +588,35 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     function getCodeFromInputs() {
-        const c1 = document.getElementById('codeInput1').value.toUpperCase();
-        const c2 = document.getElementById('codeInput2').value.toUpperCase();
-        const c3 = document.getElementById('codeInput3').value.toUpperCase();
-        return `${c1}-${c2}-${c3}`;
+        return document.getElementById('codeInputSingle').value.toUpperCase();
     }
 
-    // Auto-advance code inputs
-    ['codeInput1', 'codeInput2', 'codeInput3'].forEach((id, index, arr) => {
-        const input = document.getElementById(id);
-        input.addEventListener('input', (e) => {
-            e.target.value = e.target.value.toUpperCase();
-            if (e.target.value.length === 4 && index < arr.length - 1) {
-                document.getElementById(arr[index + 1]).focus();
-            }
-        });
+    // Auto-format code input with dashes
+    const codeInput = document.getElementById('codeInputSingle');
+    codeInput.addEventListener('input', (e) => {
+        let value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+        // Add dashes after every 4 characters
+        if (value.length > 4) {
+            value = value.slice(0, 4) + '-' + value.slice(4);
+        }
+        if (value.length > 9) {
+            value = value.slice(0, 9) + '-' + value.slice(9);
+        }
+        e.target.value = value.slice(0, 14);
     });
+
+    // Track PIN status
+    let userHasPin = false;
+
+    function updatePinUI() {
+        if (userHasPin) {
+            document.getElementById('pinNotSet').style.display = 'none';
+            document.getElementById('pinIsSet').style.display = 'flex';
+        } else {
+            document.getElementById('pinNotSet').style.display = 'flex';
+            document.getElementById('pinIsSet').style.display = 'none';
+        }
+    }
 
     // Check for existing access code
     const existingCode = cloudSync.getAccessCode();
@@ -563,6 +625,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         const result = await cloudSync.autoLoad();
 
         if (result && result.success) {
+            // Track PIN status
+            userHasPin = result.hasPin || false;
             // Load tasks from cloud
             window.taskManager = new TaskManager(cloudSync);
             if (result.tasks && result.tasks.length > 0) {
@@ -572,10 +636,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         } else if (result && result.needsPin) {
             // Show PIN input
             showSection(accessEnterCode);
-            const codeInputs = existingCode.split('-');
-            document.getElementById('codeInput1').value = codeInputs[0] || '';
-            document.getElementById('codeInput2').value = codeInputs[1] || '';
-            document.getElementById('codeInput3').value = codeInputs[2] || '';
+            document.getElementById('codeInputSingle').value = existingCode;
             document.getElementById('pinInputGroup').style.display = 'block';
         } else {
             // Code invalid - show choice
@@ -626,6 +687,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const result = await cloudSync.validateCode(code, pin || null);
 
         if (result.success) {
+            userHasPin = result.hasPin || false;
             window.taskManager = new TaskManager(cloudSync);
             if (result.tasks && result.tasks.length > 0) {
                 window.taskManager.setTasks(result.tasks);
@@ -663,6 +725,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Settings button
     btnSettings.addEventListener('click', () => {
         document.getElementById('settingsCodeDisplay').textContent = cloudSync.getAccessCode();
+        updatePinUI();
         settingsModal.style.display = 'flex';
     });
 
@@ -674,6 +737,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Copy code in settings
     document.getElementById('btnCopyCodeSettings').addEventListener('click', () => {
         navigator.clipboard.writeText(cloudSync.getAccessCode());
+        const copiedMsg = document.getElementById('settingsCodeCopied');
+        copiedMsg.style.display = 'block';
+        setTimeout(() => {
+            copiedMsg.style.display = 'none';
+        }, 2000);
     });
 
     // Set PIN
@@ -686,8 +754,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const success = await cloudSync.setPin(pin);
         if (success) {
-            document.getElementById('pinNotSet').style.display = 'none';
-            document.getElementById('pinIsSet').style.display = 'flex';
+            userHasPin = true;
+            updatePinUI();
             document.getElementById('newPinInput').value = '';
         }
     });
@@ -696,8 +764,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('btnRemovePin').addEventListener('click', async () => {
         const success = await cloudSync.removePin();
         if (success) {
-            document.getElementById('pinNotSet').style.display = 'flex';
-            document.getElementById('pinIsSet').style.display = 'none';
+            userHasPin = false;
+            updatePinUI();
         }
     });
 

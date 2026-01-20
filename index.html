@@ -41,14 +41,11 @@
             <div id="accessEnterCode" class="modal-section" style="display: none;">
                 <h3>Enter Your Access Code</h3>
                 <div class="code-input-group">
-                    <input type="text" id="codeInput1" class="code-input" maxlength="4" placeholder="XXXX">
-                    <span class="code-separator">-</span>
-                    <input type="text" id="codeInput2" class="code-input" maxlength="4" placeholder="XXXX">
-                    <span class="code-separator">-</span>
-                    <input type="text" id="codeInput3" class="code-input" maxlength="4" placeholder="XXXX">
+                    <input type="text" id="codeInputSingle" class="code-input-single" maxlength="14"
+                        placeholder="XXXX-XXXX-XXXX">
                 </div>
                 <div id="pinInputGroup" class="pin-input-group" style="display: none;">
-                    <label>Enter your 4-digit PIN</label>
+                    <label>Enter PIN</label>
                     <input type="password" id="pinInput" class="pin-input" maxlength="4" placeholder="••••">
                 </div>
                 <p id="accessError" class="error-message" style="display: none;"></p>
@@ -96,6 +93,7 @@
                     <span id="settingsCodeDisplay">XXXX-XXXX-XXXX</span>
                     <button class="btn-copy" id="btnCopyCodeSettings" title="Copy code">📋</button>
                 </div>
+                <p id="settingsCodeCopied" class="success-message" style="display: none;">Copied!</p>
             </div>
 
             <!-- PIN Section -->
@@ -190,6 +188,12 @@
                             </div>
                         </div>
 
+                        <div class="form-group end-date-group" id="endDateGroup" style="display: none;">
+                            <label for="taskEndDate">End Date (Optional)</label>
+                            <input type="date" id="taskEndDate">
+                            <span class="help-text">Leave empty for no end date</span>
+                        </div>
+
                         <div class="form-actions">
                             <button type="submit" class="btn btn-primary" id="submitBtn">Add Task</button>
                             <button type="button" class="btn btn-secondary" id="cancelBtn"
@@ -206,8 +210,8 @@
                             All Tasks
                         </h2>
                         <div class="filter-tabs">
-                            <button class="filter-btn active" data-filter="all">All</button>
-                            <button class="filter-btn" data-filter="daily">Daily</button>
+                            <button class="filter-btn" data-filter="all">All</button>
+                            <button class="filter-btn active" data-filter="daily">Daily</button>
                             <button class="filter-btn" data-filter="weekly">Weekly</button>
                             <button class="filter-btn" data-filter="monthly">Monthly</button>
                         </div>
@@ -276,6 +280,10 @@
                 </div>
             </section>
         </main>
+
+        <footer class="footer">
+            Built by Anand · 2026
+        </footer>
     </div>
 
     <script src="config.js"></script>
