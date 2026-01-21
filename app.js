@@ -281,6 +281,11 @@ class TaskManager {
             // Task must have started (compare date strings directly to avoid timezone issues)
             if (dateStr < task.date) return false;
 
+            // Check if task has ended (for recurring tasks with end date)
+            if (task.endDate && dateStr > task.endDate) {
+                return false;
+            }
+
             // Daily recurrence
             if (task.recurrence === 'daily') {
                 return true;
@@ -412,6 +417,8 @@ class TaskManager {
 
     selectDate(dateStr) {
         this.selectedDate = dateStr;
+        // Update the task form date to the selected date for easier task creation
+        document.getElementById('taskDate').value = dateStr;
         this.renderCalendar();
         this.renderDayTasks();
     }
@@ -510,7 +517,7 @@ class TaskManager {
         const taskList = document.getElementById('taskList');
         const dayTasksList = document.getElementById('dayTasksList');
 
-        // Handler function for task actions
+        // Handler function for task actions - using arrow function to preserve 'this'
         const handleAction = (e) => {
             const target = e.target.closest('[data-action]');
             if (!target) return;
@@ -531,10 +538,16 @@ class TaskManager {
             }
         };
 
-        // Remove old listeners and add new ones using delegation
-        taskList.onclick = handleAction;
+        // Store handler reference for cleanup, and use addEventListener
+        // Clone and replace to remove all old listeners
+        const newTaskList = taskList.cloneNode(true);
+        taskList.parentNode.replaceChild(newTaskList, taskList);
+        newTaskList.addEventListener('click', handleAction);
+
         if (dayTasksList) {
-            dayTasksList.onclick = handleAction;
+            const newDayTasksList = dayTasksList.cloneNode(true);
+            dayTasksList.parentNode.replaceChild(newDayTasksList, dayTasksList);
+            newDayTasksList.addEventListener('click', handleAction);
         }
     }
 
